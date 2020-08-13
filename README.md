@@ -4,12 +4,12 @@ Collection of ACAD tools for a better walkthrough...
 ## Basic Explanation / Usage of Commands :
 
 #### BLOCKSIMPLFY    
--Function        : Gets entity's layer properties, and assign to entity itself.\
--Purpose         : Shortening Layer Table especially when superposing multiple sub-contractor projects.
+-Function        : Gets block's properties, and assign to entities.\
+-Purpose         : Shortening Layer Table, handy when superposing multiple sub-contractor projects.
                 
 #### SEPARATEBLOCKS  
 -Function       : Wblocks all blocks. (Not nested ones.)\
--Purpose        : For inspection of drawing elements separately, beneficial for file optimisation.
+-Purpose        : For inspection of objects separately, beneficial for file optimisation.
                  
 #### NEWLAYERACTIVE  
 -Function       : Simply creates a layer, name it and makes it current.\
@@ -36,7 +36,7 @@ Collection of ACAD tools for a better walkthrough...
 ![PointDepictor](images/POINTDEPICTOR.gif)
                 
 #### ZOOMEACH         
--Function      : Zoom to each element of selection one by one.\
+-Function      : Zoom to each element of current selection one by one.\
 -Purpose       : Finding elements in messy drawings quickly.
                 
                 
