@@ -1,0 +1,6 @@
+E:\98_cs\ACAD\J_Tools\J_NonCoplanar\J_NonCoplanar\bin\Debug\J_NonCoplanar.dll
+E:\98_cs\ACAD\J_Tools\J_NonCoplanar\J_NonCoplanar\bin\Debug\J_NonCoplanar.pdb
+E:\98_cs\ACAD\J_Tools\J_NonCoplanar\J_NonCoplanar\obj\Debug\J_NonCoplanar.csproj.AssemblyReference.cache
+E:\98_cs\ACAD\J_Tools\J_NonCoplanar\J_NonCoplanar\obj\Debug\J_NonCoplanar.csproj.CoreCompileInputs.cache
+E:\98_cs\ACAD\J_Tools\J_NonCoplanar\J_NonCoplanar\obj\Debug\J_NonCoplanar.dll
+E:\98_cs\ACAD\J_Tools\J_NonCoplanar\J_NonCoplanar\obj\Debug\J_NonCoplanar.pdb
