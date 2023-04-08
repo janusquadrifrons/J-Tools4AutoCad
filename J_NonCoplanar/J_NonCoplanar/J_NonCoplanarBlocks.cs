@@ -29,16 +29,17 @@ namespace MyAutoCADPlugin
             using (Transaction tr = db.TransactionManager.StartTransaction())
             {
                 // Get the block table and block table record
-                BlockTable bt = (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForRead);
-                BlockTableRecord btr = (BlockTableRecord)tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForRead);
+                BlockTable bt = (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForWrite);
+                BlockTableRecord btr = (BlockTableRecord)tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForWrite);
 
                 // Create a list to store the names of non-coplanar blocks
                 List<string> nonCoplanarBlocks = new List<string>();
+                ObjectIdCollection nonCoplanarBlockIds = new ObjectIdCollection();
 
                 // Iterate through the entities in the model space
                 foreach (ObjectId objId in btr)
                 {
-                    var ent = tr.GetObject(objId, OpenMode.ForRead) as Entity;
+                    Entity ent = tr.GetObject(objId, OpenMode.ForWrite) as Entity;
                     if (ent == null) continue;
 
                     // Select only blocks and nested blocks
@@ -51,6 +52,7 @@ namespace MyAutoCADPlugin
                         if (!blockPlane.Normal.IsParallelTo(Vector3d.ZAxis))
                         {
                             nonCoplanarBlocks.Add(blockRef.Name ?? "");
+                            nonCoplanarBlockIds.Add(blockRef.ObjectId);
                         }
 
                     }
@@ -58,12 +60,12 @@ namespace MyAutoCADPlugin
                     {
                         BlockReference blockRef = (BlockReference)ent;
 
-                        BlockTableRecord nestedBtr = (BlockTableRecord)tr.GetObject(blockRef.BlockTableRecord, OpenMode.ForRead);
+                        BlockTableRecord nestedBtr = (BlockTableRecord)tr.GetObject(blockRef.BlockTableRecord, OpenMode.ForWrite);
 
                         // Iterate through the entities in the nested block
                         foreach (ObjectId nestedObjId in nestedBtr)
                         {
-                            var nestedEnt = tr.GetObject(nestedObjId, OpenMode.ForRead) as Entity;
+                            var nestedEnt = tr.GetObject(nestedObjId, OpenMode.ForWrite) as Entity;
                             if (nestedEnt == null) continue;
 
                             // Select only non-coplanar blocks
@@ -76,6 +78,7 @@ namespace MyAutoCADPlugin
                                 if (!blockPlane.Normal.IsParallelTo(Vector3d.ZAxis))
                                 {
                                     nonCoplanarBlocks.Add(nestedBlockRef.Name ?? "");
+                                    nonCoplanarBlockIds.Add(nestedBlockRef.ObjectId);
                                 }
 
 
@@ -90,25 +93,24 @@ namespace MyAutoCADPlugin
                     ed.WriteMessage("\nNon-coplanar block found: " + blockName);
                 }
 
-                PromptResult result = ed.GetKeywords("\nDo you want to fix/flatten those blocks? [Yes/No]", "Yes No");
+                PromptResult result = ed.GetKeywords("\nDo you want to fix/flatten those blocks? [Yes/No]", "Yes", "No");
                 if (result.Status == PromptStatus.OK)
                 {
                     if (result.StringResult == "Yes")
                     {
                         // Do re-insert the block if user selects "Yes"
-                        foreach (var nonCoplanarBlock in nonCoplanarBlocks)
+                        foreach (ObjectId nonCoplanarBlockId in nonCoplanarBlockIds)
                         {
-                            var objectId = new ObjectId(nonCoplanarBlock.ObjectId);
-                            var blockReference = (BlockReference)objectId.GetObject(OpenMode.ForWrite);
+                            BlockReference blockReference = (BlockReference)tr.GetObject(nonCoplanarBlockId, OpenMode.ForWrite);
 
-                            var blockDefinition = (BlockTableRecord)blockReference.BlockTableRecord.GetObject(OpenMode.ForRead);
+                            BlockTableRecord blockDefinition = (BlockTableRecord)blockReference.BlockTableRecord.GetObject(OpenMode.ForWrite);
 
-                            var position = blockReference.Position;
-                            var scaleFactors = blockReference.ScaleFactors;
+                            Point3d position = blockReference.Position;
+                            Scale3d scaleFactors = blockReference.ScaleFactors;
 
                             blockReference.Erase();
 
-                            var newBlockReference = new BlockReference(position, blockDefinition.ObjectId)
+                            BlockReference newBlockReference = new BlockReference(position, blockDefinition.ObjectId)
                             {
                                 ScaleFactors = scaleFactors
                             };
@@ -122,12 +124,12 @@ namespace MyAutoCADPlugin
                             tr.AddNewlyCreatedDBObject(blockReference, true);
                         }
 
-
-
                     }
-                    else
+                    else if (result.StringResult == "No")
                     {
-                        // Do something if user selects "No"
+                        // Do terminate the program if user selects "No"
+                        ed.WriteMessage("\nNon-coplanar block replacement terminated.");
+                        return;
                     }
                 }
 
