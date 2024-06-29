@@ -518,6 +518,73 @@ namespace J_Tools
         }
 
         /////////////////////////////////////////////////////////
+        ///
+
+        /// Find the centroid of a closed polyline ///
+        /// 
+
+        [CommandMethod("POLYCENTROID")]
+
+        static public void PolyCentroid()
+        {
+            Document doc = Application.DocumentManager.MdiActiveDocument;
+            Database db = doc.Database;
+            Editor ed = doc.Editor;
+
+            // Select a polyline object
+            PromptEntityOptions peopt = new PromptEntityOptions("\nSelect a polyline : ");  // Prompt options
+            peopt.SetRejectMessage("\nSelect only a polyline.");                            // Reject message
+            peopt.AddAllowedClass(typeof(Polyline), false);                                 // Allow only polylines
+            peopt.AllowNone = false;                                                        // User must select an object
+
+            PromptEntityResult peres = ed.GetEntity(peopt);                                 // Get the result
+
+            if (peres.Status != PromptStatus.OK) { return; }                                // If the user cancels the operation
+
+            using (Transaction tx = db.TransactionManager.StartTransaction())
+            {
+                // Get the polyline object
+                Polyline pl = tx.GetObject(peres.ObjectId, OpenMode.ForRead) as Polyline;
+                if (pl == null)
+                {return;}
+
+                // Get the number of vertices
+                int vn = pl.NumberOfVertices;
+
+                // Get the centroid
+                Point3d centroid = new Point3d(0, 0, 0);
+                double area = 0;
+
+                for (int i = 0; i < vn; i++)
+                {
+                    Point2d pt1 = pl.GetPoint2dAt(i);
+                    Point2d pt2 = pl.GetPoint2dAt((i + 1) % vn);
+                    double a = pt1.X * pt2.Y - pt2.X * pt1.Y;
+                    area += a;
+                    centroid = new Point3d(centroid.X + (pt1.X + pt2.X) * a, centroid.Y + (pt1.Y + pt2.Y) * a, 0);
+                }
+
+                area /= 2;
+                centroid = new Point3d(centroid.X / (6 * area), centroid.Y / (6 * area), 0);
+
+                // Display the centroid
+                ed.WriteMessage("\nCentroid of the polyline is : " + centroid.ToString());
+
+                // Put a 2d point at the centroid
+                using (DBPoint dbpt = new DBPoint(centroid))
+                {
+                    BlockTable bt = tx.GetObject(db.BlockTableId, OpenMode.ForRead) as BlockTable;
+                    BlockTableRecord btrec = tx.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForWrite) as BlockTableRecord;
+
+                    btrec.AppendEntity(dbpt);
+                    tx.AddNewlyCreatedDBObject(dbpt, true);
+                }
+
+                // Commit the transaction
+                tx.Commit();
+
+            }
+        }
 
 
     }

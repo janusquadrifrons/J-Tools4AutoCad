@@ -10,6 +10,7 @@ using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Colors;
 using Autodesk.AutoCAD.Geometry;
+using System.Linq.Expressions;
 
 namespace J_Tools
 {
@@ -168,6 +169,99 @@ namespace J_Tools
             }
         }
 
+        /////////////////////////////////////////////////////////
 
+        // Extract nested object from its block
+        // ISSUE.240629 : Multiple nested objects behaviour should be restricted
+
+        [CommandMethod("EXTRACTNESTEDOBJECT")]
+        static public void ExtractNestedObject()
+        {
+            // Get the current document and database
+            Document doc = Application.DocumentManager.MdiActiveDocument;
+            Database db = doc.Database;
+            Editor ed = doc.Editor;
+
+            try
+            {
+                // Prompt the user to select a nested object which is in a block
+                PromptNestedEntityResult result = ed.GetNestedEntity("\nSelect an object which is nested in a block: ");
+                if (result.Status != PromptStatus.OK) 
+                    return;
+                
+                using (Transaction tr = db.TransactionManager.StartTransaction())
+                {
+                    // Open the selected entity for read
+                    Entity ent = tr.GetObject(result.ObjectId, OpenMode.ForRead) as Entity; 
+
+                    if (ent == null) 
+                    {
+                        ed.WriteMessage("\nInvalid object selected.");
+                        return;
+                    }
+
+                    // Find the container block reference
+                    BlockReference parentBlockReference = null; 
+                    
+                    foreach(ObjectId containerId in result.GetContainers())
+                    {
+                        BlockReference containerBlockReference = tr.GetObject(containerId, OpenMode.ForRead) as BlockReference;
+
+                        if(containerBlockReference != null)
+                        {
+                            parentBlockReference = containerBlockReference;
+                            break;
+                        }
+                    }
+
+                    if (parentBlockReference == null)
+                    {
+                        ed.WriteMessage("\nThe selected object is not nested in a block.");
+                        return;
+                    }
+
+                    // Clone the entity to the model space
+                    Entity entClone = ent.Clone() as Entity;
+                    if (entClone == null)
+                    {
+                        ed.WriteMessage("\nFailed to clone the object.");
+                        return;
+                    }
+
+                    // Calculate the world coordinate transformation
+                    Matrix3d blockTransform = parentBlockReference.BlockTransform;
+
+                    // Apply the transformation to the entity
+                    entClone.TransformBy(blockTransform);
+
+                    // Add the new entity to the current space
+                    BlockTableRecord btr = tr.GetObject(db.CurrentSpaceId, OpenMode.ForWrite) as BlockTableRecord;
+                    btr.AppendEntity(entClone);
+                    tr.AddNewlyCreatedDBObject(entClone, true);
+
+                    // Remove the original entity from the block definition
+                    BlockTableRecord blockDef = tr.GetObject(parentBlockReference.BlockTableRecord, OpenMode.ForWrite) as BlockTableRecord;
+                    if(blockDef == null)
+                    {
+                        ed.WriteMessage("\nFailed to open the block definition");
+                        return;
+                    }
+
+                    ent.UpgradeOpen(); // --- Upgrade the object to write mode
+                    ent.Erase(true);
+                    parentBlockReference.RecordGraphicsModified(true);
+                    
+
+                    tr.Commit();
+                    ed.Regen();
+                    ed.WriteMessage("\nObject extracted successfully.");
+                }
+            }
+
+            catch (System.Exception ex)
+            {
+                ed.WriteMessage("\nError: " + ex.Message);
+            }
+        }
     }
 }
