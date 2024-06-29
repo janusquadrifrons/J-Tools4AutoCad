@@ -1,6 +1,8 @@
 
 
-FATAL ERROR:  Unhandled Access Violation Reading 0x0000 Exception at 3CC55B95h
+INTERNAL ERROR:  !dbobji.cpp@8673: eNotOpenForWrite
 
-05/29/2020 at 15:40:23.000  Drawing: E:\98 cs\ACAD\J_Tools\J_BlockSimplify\test.01.dwg
+06/29/2024 at 15:47:07.000  Drawing: Drawing1.dwg
+-------------
+\98 cs\ACAD\J_Tools\J_BlockSimplify\test.01.dwg
 -------------
