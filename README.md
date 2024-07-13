@@ -39,5 +39,15 @@ Collection of ACAD tools for a better walkthrough...
 -Function      : Zoom to each element of current selection one by one.\
 -Purpose       : Finding elements in messy drawings quickly.
                 
-                
+#### POLYCENTROID         
+-Function      : Finds the geometric centre of polylines.\
+-Purpose       : Drafting.
+
+#### EXTRACTNESTEDOBJECT         
+-Function      : Extract the selected object from its chain of blocks.\
+-Purpose       : Skipping the block editor and reference editing on workspace process.
+
+#### EXTRACTNESTEDBLOCK         
+-Function      : Extract the selected objects immediate block from its chain of blocks.\
+-Purpose       : Skipping the block editor and reference editing on workspace process.
                   
