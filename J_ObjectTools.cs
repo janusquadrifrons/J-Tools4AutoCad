@@ -518,10 +518,8 @@ namespace J_Tools
         }
 
         /////////////////////////////////////////////////////////
-        ///
 
-        /// Find the centroid of a closed polyline ///
-        /// 
+        /// Find the centroid of a polyline ///
 
         [CommandMethod("POLYCENTROID")]
 

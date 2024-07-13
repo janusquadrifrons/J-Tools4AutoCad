@@ -11,6 +11,7 @@ using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Colors;
 using Autodesk.AutoCAD.Geometry;
 using System.Linq.Expressions;
+using System.ComponentModel;
 
 namespace J_Tools
 {
@@ -228,11 +229,19 @@ namespace J_Tools
                         return;
                     }
 
-                    // Calculate the world coordinate transformation
-                    Matrix3d blockTransform = parentBlockReference.BlockTransform;
+                    // Calculate the "combined" transformation
+                    Matrix3d transform = Matrix3d.Identity;
+                    foreach (ObjectId containerId in result.GetContainers())
+                    {
+                        BlockReference containerBlockReference = tr.GetObject(containerId, OpenMode.ForRead) as BlockReference;
+                        if (containerBlockReference != null)
+                        {
+                            transform = containerBlockReference.BlockTransform * transform;
+                        }
+                    }
 
                     // Apply the transformation to the entity
-                    entClone.TransformBy(blockTransform);
+                    entClone.TransformBy(transform);
 
                     // Add the new entity to the current space
                     BlockTableRecord btr = tr.GetObject(db.CurrentSpaceId, OpenMode.ForWrite) as BlockTableRecord;
@@ -262,6 +271,120 @@ namespace J_Tools
             {
                 ed.WriteMessage("\nError: " + ex.Message);
             }
+        }
+
+        /////////////////////////////////////////////////////////
+        
+        // Extract a nested block from its parent blocks
+
+        [CommandMethod("EXTRACTNESTEDBLOCK")]
+        static public void ExtractNestedBlock()
+        {
+            Document doc = Application.DocumentManager.MdiActiveDocument;
+            Database db = doc.Database;
+            Editor ed = doc.Editor;
+
+            try
+            {
+                // Prompt the user to select a nested object which is in a block
+                PromptNestedEntityOptions pneoptions = new PromptNestedEntityOptions("\nSelect an object or block to extract from its immediate parent: ");
+                pneoptions.AllowNone = false;
+                PromptNestedEntityResult result = ed.GetNestedEntity(pneoptions);
+
+                if (result.Status != PromptStatus.OK)
+                    return;
+
+                using (Transaction tr = db.TransactionManager.StartTransaction())
+                {
+                    // Open the selected entity for read
+                    Entity ent = tr.GetObject(result.ObjectId, OpenMode.ForRead) as Entity;
+                    BlockReference firstParentBlock = null;
+                    BlockReference secondParentBlock = null;
+                    Entity entityToExtract = null;
+
+                    if (ent == null)
+                    {
+                        ed.WriteMessage("\nInvalid object selected.");
+                        return;
+                    }
+
+                    // Count the block references that contain the selected entity & Dialogue
+                    ObjectId[] containerIds = result.GetContainers();
+                    ed.WriteMessage("\nThe selected object is nested in " + containerIds.Length + " block(s).");
+
+                    // If the object is not nested
+                    if (containerIds.Length == 0)
+                    {
+                        ed.WriteMessage("\nThe selected object is not nested in a block.");
+                        return;
+                    }
+                    else if (containerIds.Length == 1)
+                    {
+                        firstParentBlock = tr.GetObject(containerIds[0], OpenMode.ForRead) as BlockReference;
+                    }
+                    else
+                    {
+                        firstParentBlock = tr.GetObject(containerIds[0], OpenMode.ForRead) as BlockReference;
+                        secondParentBlock = tr.GetObject(containerIds[1], OpenMode.ForRead) as BlockReference;
+                    }
+
+                    // Extract the object or its immediate parent block
+                    entityToExtract = (containerIds.Length == 1) ? ent : firstParentBlock;
+
+                    // Clone the object
+                    Entity clonedEntity = entityToExtract.Clone() as Entity;
+
+                    // Calculate the "local - independent" transform and reverse it
+                    Matrix3d localTransformUndo = Matrix3d.Identity;
+                    localTransformUndo = firstParentBlock.BlockTransform.Inverse();
+                    
+                    // Calculate the "combined" transformation
+                    Matrix3d transform = Matrix3d.Identity;
+                    foreach (ObjectId containerId in containerIds)
+                    {
+                        BlockReference containerBlockReference = tr.GetObject(containerId, OpenMode.ForRead) as BlockReference;
+                        if (containerBlockReference != null)
+                        {
+                            //transform = transform.PreMultiplyBy(containerBlockReference.BlockTransform);
+                            transform = containerBlockReference.BlockTransform * transform;
+                        }
+
+                    }
+
+                    // Apply the transformations
+                    clonedEntity.TransformBy(localTransformUndo);
+                    clonedEntity.TransformBy(transform);
+
+                    // Add the cloned entity to model space
+                    BlockTableRecord modelSpace = tr.GetObject(db.CurrentSpaceId, OpenMode.ForWrite) as BlockTableRecord;
+                    modelSpace.AppendEntity(clonedEntity);
+                    tr.AddNewlyCreatedDBObject(clonedEntity, true);
+
+                    // Remove the original entity from its parent
+                    if (containerIds.Length == 1)
+                    {
+                        ent.UpgradeOpen();
+                        ent.Erase(true);
+                        firstParentBlock.RecordGraphicsModified(true);
+                    }
+                    else
+                    {
+                        firstParentBlock.UpgradeOpen();
+                        firstParentBlock.Erase(true);
+                        secondParentBlock.RecordGraphicsModified(true);
+                    }
+
+                    tr.Commit();
+                    ed.Regen();
+                    ed.WriteMessage("\nObject extracted successfully.");
+
+                }
+            }
+            catch (System.Exception ex)
+            {
+                ed.WriteMessage("\nError: " + ex.Message);
+            }
+           
         }
     }
 }

@@ -4,3 +4,9 @@ E:\98 cs\ACAD\J_Tools\J_Tools\obj\Debug\J_Tools.csprojAssemblyReference.cache
 E:\98 cs\ACAD\J_Tools\J_Tools\obj\Debug\J_Tools.csproj.CoreCompileInputs.cache
 E:\98 cs\ACAD\J_Tools\J_Tools\obj\Debug\J_Tools.dll
 E:\98 cs\ACAD\J_Tools\J_Tools\obj\Debug\J_Tools.pdb
+E:\98_cs\ACAD\J_Tools\J_Tools\bin\Debug\J_Tools.dll
+E:\98_cs\ACAD\J_Tools\J_Tools\bin\Debug\J_Tools.pdb
+E:\98_cs\ACAD\J_Tools\J_Tools\obj\Debug\J_Tools.csproj.AssemblyReference.cache
+E:\98_cs\ACAD\J_Tools\J_Tools\obj\Debug\J_Tools.csproj.CoreCompileInputs.cache
+E:\98_cs\ACAD\J_Tools\J_Tools\obj\Debug\J_Tools.dll
+E:\98_cs\ACAD\J_Tools\J_Tools\obj\Debug\J_Tools.pdb
