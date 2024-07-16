@@ -50,4 +50,12 @@ Collection of ACAD tools for a better walkthrough...
 #### EXTRACTNESTEDBLOCK         
 -Function      : Extract the selected objects immediate block from its chain of blocks.\
 -Purpose       : Skipping the block editor and reference editing on workspace process.
+
+#### DETECTNONCOPLANARARCSANDCIRCLES         
+-Function      : Detect non-coplanar arcs and circles in the drawing\
+-Purpose       : Compliance check of vendor projects.
+
+#### DETECTNONCOPLANARBLOCKS         
+-Function      : Detect non-coplanar blocks in the drawing\
+-Purpose       : Compliance check of vendor projects.
                   
