@@ -1,21 +1,18 @@
-﻿using System;
-
-using Autodesk.AutoCAD.Runtime;
+﻿using Autodesk.AutoCAD.Runtime;
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
-using Autodesk.AutoCAD.Geometry;
 using Autodesk.AutoCAD.Colors;
 
 
 namespace J_Tools
 {
-    public class J_DatabaseTools
+    public class J_DatabaseTools : BaseCommand
     {
-        /// Create a new active layer by command bar
-        /// 
+        // Create a new active layer by command bar
+         
         [CommandMethod("NEWLAYERACTIVE")]
-        public static void NewLayerActive()
+        public void NewLayerActive()
         {
             Document doc = Application.DocumentManager.MdiActiveDocument;
             Database db = doc.Database;
@@ -50,6 +47,5 @@ namespace J_Tools
                 tx.Commit();
             }
         }
-
     }
 }

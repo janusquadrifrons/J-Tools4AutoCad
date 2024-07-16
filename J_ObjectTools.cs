@@ -9,9 +9,24 @@ using Autodesk.AutoCAD.Geometry;
 
 namespace J_Tools
 {
-    public class J_ObjectTools
+    // Base class for common declarations
+    public abstract class BaseCommand
     {
-        // Sub-func - for OPENJOINT
+        protected Document doc;
+        protected Database db;
+        protected Editor ed;
+
+        protected BaseCommand()
+        {
+            doc = Application.DocumentManager.MdiActiveDocument;
+            db = doc.Database;
+            ed = doc.Editor;
+        }
+    }
+
+    public class J_ObjectTools : BaseCommand
+    {
+        // Helper function - for OPENJOINT
         public static double AngleBetweenLines(Point3d s1, Point3d s2, Point3d e1, Point3d e2)
         {
             double theta1 = Math.Atan2(s1.Y - e1.Y, s1.X - e1.X);
@@ -21,12 +36,12 @@ namespace J_Tools
             return angle;
         }
 
-        // Sub-func
-        static public void QueryObjects()
+        /////////////////////////////////////////////////////////
+
+        // Helper function
+        public void QueryObjects()
         {
             // Get the current document and database
-            Document doc = Application.DocumentManager.MdiActiveDocument;
-            Database db = doc.Database;
 
             // Start a transaction
             using (Transaction tx = db.TransactionManager.StartTransaction())
@@ -48,12 +63,11 @@ namespace J_Tools
             }
         }
 
-        // Sub-func - for MCOPY
-        static public void IterateCopy(DBObjectCollection dbocoll, Vector3d vec)
+        /////////////////////////////////////////////////////////
+
+        // Helper function - for MCOPY
+        public void IterateCopy(DBObjectCollection dbocoll, Vector3d vec)
         {
-            Document doc = Application.DocumentManager.MdiActiveDocument;
-            Database db = doc.Database;
-            Editor ed = doc.Editor;
 
             using (Transaction tx = db.TransactionManager.StartTransaction())
             {
@@ -79,11 +93,8 @@ namespace J_Tools
         // 200501 ISSUE : obj UCS yi centera atasak yeter. Bu komuta ihtiyaç yok
 
         [CommandMethod("GETCENTER")]
-        static public void GetCenter()
+        public void GetCenter()
         {
-            Document doc = Application.DocumentManager.MdiActiveDocument;
-            Database db = doc.Database;
-            Editor ed = doc.Editor;
 
             PromptEntityOptions peopt = new PromptEntityOptions("\nSelect curve to get center : ");
             peopt.SetRejectMessage("\nSelect only a curve.");
@@ -112,11 +123,8 @@ namespace J_Tools
         // 200504 ISSUE : not suitable for obtuse angles
 
         [CommandMethod("OPENJOINT")]
-        static public void OpenJoint()
+        public void OpenJoint()
         {
-            Document doc = Application.DocumentManager.MdiActiveDocument;
-            Database db = doc.Database;
-            Editor ed = doc.Editor;
 
             using (Transaction tx = db.TransactionManager.StartTransaction())
             {
@@ -157,7 +165,7 @@ namespace J_Tools
                 // Get intersection point > Check parallelity > re-orient lines
                 Point3dCollection intptcoll = new Point3dCollection();
 
-                line1.IntersectWith(line2, Intersect.OnBothOperands, intptcoll, 0, 0);
+                line1.IntersectWith(line2, Intersect.OnBothOperands, intptcoll, IntPtr.Zero, IntPtr.Zero);
 
                 if (intptcoll.Count != 1) { Application.ShowAlertDialog("Lines are parallel or not intersecting");
                     ed.WriteMessage(intptcoll.Count.ToString()); 
@@ -224,11 +232,8 @@ namespace J_Tools
         /// Multiple copy - Sketchup way
 
         [CommandMethod("MCOPY")]
-        static public void Mcopy()
+        public void Mcopy()
         {
-            Document doc = Application.DocumentManager.MdiActiveDocument;
-            Database db = doc.Database;
-            Editor ed = doc.Editor;
 
             // Select the objects to copy
             PromptSelectionOptions psopt = new PromptSelectionOptions();
@@ -311,11 +316,8 @@ namespace J_Tools
         /// Matchprop reverse
 
         [CommandMethod("MATCHPROPREVERSE", CommandFlags.UsePickSet)]
-        static public void MatchPropReverse()
+        public void MatchPropReverse()
         {
-            Document doc = Application.DocumentManager.MdiActiveDocument;
-            Database db = doc.Database;
-            Editor ed = doc.Editor;
 
             PromptSelectionResult psres = ed.SelectImplied();
 
@@ -344,7 +346,6 @@ namespace J_Tools
                     //BlockTableRecord btrec = tx.GetObject(bt[BlockTableRecord.ModelSpace],OpenMode.ForWrite) as BlockTableRecord;
 
                     LayerTable laytab = tx.GetObject(db.LayerTableId, OpenMode.ForRead) as LayerTable;
-                    LayerTableRecord laytabrec = null;
 
                     DBObjectCollection dbocoll = new DBObjectCollection();
                     //ObjectId[] oids = psres.Value.GetObjectIds();
@@ -394,11 +395,8 @@ namespace J_Tools
         /// Temporary point depictor
 
         [CommandMethod("POINTDEPICTOR")]
-        static public void PointDepictor()
+        public void PointDepictor()
         {
-            Document doc = Application.DocumentManager.MdiActiveDocument;
-            Database db = doc.Database;
-            Editor ed = doc.Editor;
 
             // Create a TypedValue array to define the filter criteria
             TypedValue[] tyval = new TypedValue[1];
@@ -452,11 +450,8 @@ namespace J_Tools
         /// Zoom selected objects one by one
 
         [CommandMethod("ZOOMEACH",CommandFlags.UsePickSet)]
-        static public void ZommEach()
+        public void ZommEach()
         {
-            Document doc = Application.DocumentManager.MdiActiveDocument;
-            Database db = doc.Database;
-            Editor ed = doc.Editor;
 
             PromptSelectionResult psres = ed.SelectImplied();
 
@@ -523,11 +518,8 @@ namespace J_Tools
 
         [CommandMethod("POLYCENTROID")]
 
-        static public void PolyCentroid()
+        public void PolyCentroid()
         {
-            Document doc = Application.DocumentManager.MdiActiveDocument;
-            Database db = doc.Database;
-            Editor ed = doc.Editor;
 
             // Select a polyline object
             PromptEntityOptions peopt = new PromptEntityOptions("\nSelect a polyline : ");  // Prompt options
@@ -583,7 +575,5 @@ namespace J_Tools
 
             }
         }
-
-
     }
 }

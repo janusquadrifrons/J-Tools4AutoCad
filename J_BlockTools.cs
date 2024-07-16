@@ -1,6 +1,5 @@
-﻿using System;
-using System.IO; // File Management
-using System.Text.RegularExpressions; // Regex 
+﻿using System.IO; // --- File Management
+using System.Text.RegularExpressions; // --- Regex 
 
 /// Block related operators
 
@@ -10,21 +9,16 @@ using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Colors;
 using Autodesk.AutoCAD.Geometry;
-using System.Linq.Expressions;
-using System.ComponentModel;
 
 namespace J_Tools
 {
-    public class J_BlockTools
+    public class J_BlockTools : BaseCommand
     {
         //  Get entity's layer properties, and assign to entity itself in order to shorten Layer Table.
 
         [CommandMethod("BLOCKSIMPLFY")]
-        static public void BlockSimplfy()
+        public void BlockSimplfy()
         {
-            Document doc = Application.DocumentManager.MdiActiveDocument;
-            Database db = doc.Database;
-            Editor ed = doc.Editor;
 
             PromptEntityOptions peopt = new PromptEntityOptions("\nSelect block reference");
             peopt.SetRejectMessage("\nSelect only block reference");
@@ -101,11 +95,8 @@ namespace J_Tools
         // ISSUE : Replace dll path with active document path
 
         [CommandMethod("SEPARATEBLOCKS")]
-        static public void SeparateBlocks()
+        public void SeparateBlocks()
         {
-            Document doc = Application.DocumentManager.MdiActiveDocument;
-            Database db = doc.Database;
-            Editor ed = doc.Editor;
 
             string path = "blocks"; //--will be used to create sub folder
             RXClass blockclass = RXClass.GetClass(typeof(BlockReference)); //--will be used to determine enttiy type
@@ -172,16 +163,11 @@ namespace J_Tools
 
         /////////////////////////////////////////////////////////
 
-        // Extract nested object from its block
-        // ISSUE.240629 : Multiple nested objects behaviour should be restricted
+        // Extracts nested object from its block
 
         [CommandMethod("EXTRACTNESTEDOBJECT")]
-        static public void ExtractNestedObject()
+        public void ExtractNestedObject()
         {
-            // Get the current document and database
-            Document doc = Application.DocumentManager.MdiActiveDocument;
-            Database db = doc.Database;
-            Editor ed = doc.Editor;
 
             try
             {
@@ -278,11 +264,8 @@ namespace J_Tools
         // Extract a nested block from its parent blocks
 
         [CommandMethod("EXTRACTNESTEDBLOCK")]
-        static public void ExtractNestedBlock()
+        public void ExtractNestedBlock()
         {
-            Document doc = Application.DocumentManager.MdiActiveDocument;
-            Database db = doc.Database;
-            Editor ed = doc.Editor;
 
             try
             {
