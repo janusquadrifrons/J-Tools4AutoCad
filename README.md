@@ -52,10 +52,13 @@ Collection of ACAD tools for a better walkthrough...
 -Purpose       : Skipping the block editor and reference editing on workspace process.
 
 #### DETECTNONCOPLANARARCSANDCIRCLES         
--Function      : Detect non-coplanar arcs and circles in the drawing\
+-Function      : Detect non-coplanar arcs and circles in the drawing.\
 -Purpose       : Compliance check of vendor projects.
 
 #### DETECTNONCOPLANARBLOCKS         
--Function      : Detect non-coplanar blocks in the drawing\
+-Function      : Detect non-coplanar blocks in the drawing.\
 -Purpose       : Compliance check of vendor projects.
                   
+#### SELECTSIMILARINVIEW         
+-Function      : Select similar objects only in current view boundaries by using built-in SELECTSIMILAR settings.\
+-Purpose       : Better control of partial selection in large models.
