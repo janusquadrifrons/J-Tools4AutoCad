@@ -1,8 +1,8 @@
 
 
-INTERNAL ERROR:  !dbobji.cpp@8673: eNotOpenForWrite
+FATAL ERROR:  Unhandled Access Violation Reading 0x0000 Exception at C0FE06BCh
 
-07/16/2024 at 15:30:41.000  Drawing: C:\Users\MSI\Desktop\Drawing1.dwg
+07/17/2024 at 17:25:46.000  Drawing: C:\Users\MSI\Desktop\Drawing1.dwg
 -------------
-_BlockSimplify\test.01.dwg
+
 -------------

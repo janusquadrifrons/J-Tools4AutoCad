@@ -58,6 +58,7 @@
     <Compile Include="J_BlockTools.cs" />
     <Compile Include="J_DatabaseTools.cs" />
     <Compile Include="J_ObjectTools.cs" />
+    <Compile Include="J_SelectionTools.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
