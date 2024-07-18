@@ -43,6 +43,8 @@ Collection of ACAD tools for a better walkthrough...
 -Function      : Finds the geometric centre of polylines.\
 -Purpose       : Drafting.
 
+![SelectSimilarInView](images/POLYCENTROID.gif)
+
 #### EXTRACTNESTEDOBJECT         
 -Function      : Extract the selected object from its chain of blocks.\
 -Purpose       : Skipping the block editor and reference editing on workspace process.
@@ -62,5 +64,3 @@ Collection of ACAD tools for a better walkthrough...
 #### SELECTSIMILARINVIEW         
 -Function      : Select similar objects only in current view boundaries by using built-in SELECTSIMILAR settings.\
 -Purpose       : Better control of partial selection in large models.
-
-![SelectSimilarInView](images/SELECTSIMILARINVIEW.gif)
