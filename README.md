@@ -62,3 +62,5 @@ Collection of ACAD tools for a better walkthrough...
 #### SELECTSIMILARINVIEW         
 -Function      : Select similar objects only in current view boundaries by using built-in SELECTSIMILAR settings.\
 -Purpose       : Better control of partial selection in large models.
+
+![SelectSimilarInView](images/SELECTSIMILARINVIEW.gif)
