@@ -49,6 +49,8 @@ Collection of ACAD tools for a better walkthrough...
 -Function      : Extract the selected object from its chain of blocks.\
 -Purpose       : Skipping the block editor and reference editing on workspace process.
 
+![ExtractNestedObject](images/EXTRACTNESTEDOBJECT.gif)
+
 #### EXTRACTNESTEDBLOCK         
 -Function      : Extract the selected objects immediate block from its chain of blocks.\
 -Purpose       : Skipping the block editor and reference editing on workspace process.
