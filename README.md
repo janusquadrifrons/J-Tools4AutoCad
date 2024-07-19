@@ -68,3 +68,7 @@ Collection of ACAD tools for a better walkthrough...
 #### SELECTSIMILARINVIEW         
 -Function      : Select similar objects only in current view boundaries by using built-in SELECTSIMILAR settings.\
 -Purpose       : Better control of partial selection in large models.
+
+#### CLOSEALLUNSAVED         
+-Function      : Closes all documents in the active session without saving.\
+-Purpose       : Instant termination of the session without bothering/waiting any dialogues.
