@@ -369,5 +369,117 @@ namespace J_Tools
             }
            
         }
+
+        /////////////////////////////////////////////////////////
+
+        // Delete all wipeout objects in the drawing
+
+        [CommandMethod("WIPEOUTDELETEHERE")]
+        public void WipeoutDeleteHere()
+        {
+            using (Transaction tr = db.TransactionManager.StartTransaction())
+            {
+                try
+                {
+                    BlockTableRecord currentSpace = tr.GetObject(SymbolUtilityServices.GetBlockModelSpaceId(db), OpenMode.ForRead) as BlockTableRecord;
+
+                    DeleteWipeouts(db, ed, currentSpace);
+                }
+                catch (System.Exception ex)
+                {
+                    ed.WriteMessage("\nError: " + ex.Message);
+                }
+            }
+        }
+
+        /////////////////////////////////////////////////////////
+        
+        // Delete all wipeout objects from a selected block reference and from all nested blocks within it
+
+        [CommandMethod("WIPEOUTDELETEBLOCK")]
+        public void WipeoutDeleteBlock()
+        {
+            try
+            {
+                // Prompt the user to select a block reference
+                PromptEntityOptions peopt = new PromptEntityOptions("\nSelect block reference");
+                peopt.SetRejectMessage("\nSelect only block reference");
+                peopt.AddAllowedClass(typeof(BlockReference), false);
+                peopt.AllowNone = false;
+
+                // Get the selected block reference
+                PromptEntityResult peres = ed.GetEntity(peopt);
+                if (peres != null)
+                {
+                    using (Transaction tr = db.TransactionManager.StartTransaction())
+                    {
+                        BlockReference bref = tr.GetObject(peres.ObjectId, OpenMode.ForRead) as BlockReference;
+                        BlockTableRecord btrec = null;
+
+                        // Get all block table records into a collection
+
+                        // Get the block table record by checking if the block reference is dynamic or not
+                        if (bref.IsDynamicBlock) 
+                        { 
+                            btrec = tr.GetObject(bref.DynamicBlockTableRecord, OpenMode.ForRead) as BlockTableRecord; 
+                        }
+                        else 
+                        { 
+                            btrec = tr.GetObject(bref.BlockTableRecord, OpenMode.ForRead) as BlockTableRecord; 
+                        }
+
+                        // Check if the block table record is valid then delete all wipeout objects
+                        if (btrec != null) 
+                        { 
+                            ed.WriteMessage("Block name is : " + btrec.Name + "\n");
+                            DeleteWipeouts(db, ed, btrec);
+                        }
+
+                        tr.Commit();
+                        ed.Regen();
+                        ed.WriteMessage("\nAll wipeout objects deleted successfully from " + btrec.Name.ToString() + ".");
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                ed.WriteMessage("\nError: " + ex.Message);
+            }
+        }
+
+        // Helper function - WIPEOUTDELETEBLOCK
+        // to delete all wipeot objects in current space
+
+        public static void DeleteWipeouts(Database db, Editor ed, BlockTableRecord btrec)
+        {
+            using (Transaction tr = db.TransactionManager.StartTransaction())
+            {
+                foreach (ObjectId objId in btrec)
+                {
+                    Entity ent = tr.GetObject(objId, OpenMode.ForRead) as Entity;
+
+                    // Delete wipeouts from the immediate block selected
+                    if (ent is Wipeout)
+                    {
+                        ent.UpgradeOpen();
+                        ent.Erase(true);
+                    }
+
+                    // Delete wipeouts from nested blocks
+                    if (ent is BlockReference)
+                    {
+                        BlockReference nestedBlock = ent as BlockReference;
+                        BlockTableRecord nestedBlockTableRecord = tr.GetObject(nestedBlock.BlockTableRecord, OpenMode.ForRead) as BlockTableRecord;
+                        DeleteWipeouts(db, ed, nestedBlockTableRecord);
+                    }
+                }
+
+                tr.Commit();
+                ed.Regen();
+                ed.WriteMessage("\nAll wipeout objects deleted successfully from " + btrec.Name.ToString() + ".");
+            }
+        }
     }
+
+    
 }
