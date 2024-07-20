@@ -72,3 +72,11 @@ Collection of ACAD tools for a better walkthrough...
 #### CLOSEALLUNSAVED         
 -Function      : Closes all documents in the active session without saving.\
 -Purpose       : Instant termination of the session without bothering/waiting any dialogues.
+
+#### WIPEOUTDELETEHERE         
+-Function      : Deletes all wipeout objects from the current space.\
+-Purpose       : Simplifying 3rd-party drawings.
+
+#### WIPEOUTDELETEBLOCK         
+-Function      : Deletes all wipeout objects from a selected block and its nested chain of blocks.\
+-Purpose       : Simplifying 3rd-party drawings.
