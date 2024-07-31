@@ -4,8 +4,8 @@ using Autodesk.AutoCAD.Runtime;
 using Autodesk.AutoCAD.ApplicationServices; 
 using Autodesk.AutoCAD.DatabaseServices; 
 using Autodesk.AutoCAD.EditorInput; 
-using Autodesk.AutoCAD.Geometry; 
-
+using Autodesk.AutoCAD.Geometry;
+using System.Collections.Generic;
 
 namespace J_Tools
 {
@@ -574,6 +574,116 @@ namespace J_Tools
                 tx.Commit();
 
             }
+        }
+
+        /////////////////////////////////////////////////////////
+
+        /// Rotate selected block to be perpendicular to a line/polyline
+
+        [CommandMethod("ROTBLOCKPERPENDICULAR")]
+
+        public void RotBlockPerpendicular()
+        {
+
+            // Prompt the user to select a nested object which is in a block
+            PromptNestedEntityOptions preo = new PromptNestedEntityOptions("\nSelect a line or polyline : ");
+            preo.AllowNone = false;
+
+            PromptNestedEntityResult result = ed.GetNestedEntity(preo);
+
+            if (result.Status != PromptStatus.OK)
+                return;
+
+            // Get the line or polyline
+            ObjectId slectedObjectId = result.ObjectId;
+
+            using (Transaction tr = db.TransactionManager.StartTransaction())
+            {
+                Entity selectedEntity = tr.GetObject(slectedObjectId, OpenMode.ForRead) as Entity;
+
+                // Get the vector direction of the selected entity
+                Vector3d vec = new Vector3d();
+
+                if (selectedEntity is Line line)
+                {
+                    vec = line.Delta.GetNormal(); // --- Normalized vector
+                }
+                else if (selectedEntity is Polyline polyline)
+                {
+                    Point3d startPoint = polyline.GetPoint3dAt(0);
+                    Point3d endPoint = polyline.GetPoint3dAt(polyline.NumberOfVertices - 1);
+                    vec = endPoint - startPoint;
+                    vec = vec.GetNormal(); // --- Normalized vector
+                }
+                else
+                {
+                    ed.WriteMessage("\nInvalid entity type.");
+                    return;
+                }
+
+                // Transform the vector to world coordinates
+                ObjectId[] containerIds = result.GetContainers();
+                Matrix3d transform = Matrix3d.Identity;
+
+                foreach (ObjectId containerId in containerIds)
+                {
+                    BlockReference containerBlockRef = tr.GetObject(containerId, OpenMode.ForRead) as BlockReference;
+                    if(containerBlockRef != null)
+                    {
+                        transform = transform.PreMultiplyBy(containerBlockRef.BlockTransform);
+                    }
+                }
+
+                vec = vec.TransformBy(transform);
+
+                // Perpendicular direction
+                Vector3d perpVec = vec.RotateBy(Math.PI / 2, Vector3d.ZAxis);
+
+                // Get the pre-selected block or prompt user to select a block
+                List<ObjectId> blockIds = new List<ObjectId>();
+                PromptSelectionResult psr = ed.SelectImplied();
+
+                if (psr.Status == PromptStatus.OK)
+                {
+                    blockIds.AddRange(psr.Value.GetObjectIds());
+                }
+                else
+                {
+                    PromptSelectionOptions pso = new PromptSelectionOptions();
+                    pso.MessageForAdding = "\nSelect block reference to rotate: ";
+                    psr = ed.GetSelection(pso);
+
+                    if (psr.Status != PromptStatus.OK)
+                    {
+                        ed.WriteMessage("\nCommand cancelled.");
+                        return;
+                    }
+
+                    blockIds.AddRange(psr.Value.GetObjectIds());
+                }
+
+                foreach (ObjectId blockId in blockIds)
+                {
+                    BlockReference blockRef = tr.GetObject(blockId, OpenMode.ForWrite) as BlockReference;
+                    if (blockRef != null)
+                    {
+                        // Get the current rotation of the block reference
+                        double currentRotation = blockRef.Rotation;
+
+                        // Calculate the new rotation angle to be perpendicular to the line/polyline selected
+                        double newRotation = Math.Atan2(perpVec.Y, perpVec.X) + Math.PI/2;
+
+                        // Set the new rotation angle to the block reference
+                        blockRef.Rotation = newRotation;
+                    }
+
+                }
+
+                tr.Commit();
+            }
+
+            ed.Regen();
+            ed.WriteMessage("/nBlock references rotated to be perpendicular to the selected line/polyline.");
         }
     }
 }
