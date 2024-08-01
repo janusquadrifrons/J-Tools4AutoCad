@@ -682,8 +682,52 @@ namespace J_Tools
                 tr.Commit();
             }
 
-            ed.Regen();
+            //ed.Regen();
             ed.WriteMessage("/nBlock references rotated to be perpendicular to the selected line/polyline.");
+        }
+
+        /////////////////////////////////////////////////////////
+
+        /// Rotate selected blocks 180 degrees on its base point
+
+        [CommandMethod("ROTBLOCK180")]
+
+        public void RotBlock()
+        {
+            // Prompt user to select a block reference to flip
+            PromptSelectionOptions pso = new PromptSelectionOptions();
+            pso.MessageForAdding = "\nSelect block reference to rotate: ";
+            PromptSelectionResult psr = ed.GetSelection(pso);
+
+            if (psr.Status != PromptStatus.OK)
+            {
+                ed.WriteMessage("\nCommand cancelled.");
+                return;
+            }
+
+            // Get the selected block references
+            ObjectId[] blockIds = psr.Value.GetObjectIds();
+
+            using (Transaction tr = db.TransactionManager.StartTransaction())
+            {
+                foreach (ObjectId blockId in blockIds)
+                {
+                    BlockReference blockRef = tr.GetObject(blockId, OpenMode.ForWrite) as BlockReference;
+                    if (blockRef != null)
+                    {
+                        // Get the current rotation of the block reference
+                        double currentRotation = blockRef.Rotation;
+
+                        // Calculate the new rotation angle to be 180 degrees
+                        double newRotation = currentRotation + Math.PI;
+
+                        // Set the new rotation angle to the block reference
+                        blockRef.Rotation = newRotation;
+                    }
+                }
+
+                tr.Commit();
+            }
         }
     }
 }
