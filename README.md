@@ -80,3 +80,13 @@ Collection of ACAD tools for a better walkthrough...
 #### WIPEOUTDELETEBLOCK         
 -Function      : Deletes all wipeout objects from a selected block and its nested chain of blocks.\
 -Purpose       : Simplifying 3rd-party drawings.
+
+#### ROTBLOCKPERPENDICULAR         
+-Function      : Rotates selected blocks according to a line/polyline normal on their base points.\
+-Purpose       : Instant object manipulation.
+
+#### ROTBLOCK180         
+-Function      : Flips selected blocks on their base boints.\
+-Purpose       : Instant object manipulation.
+
+
