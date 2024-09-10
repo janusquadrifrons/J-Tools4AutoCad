@@ -479,6 +479,94 @@ namespace J_Tools
                 ed.WriteMessage("\nAll wipeout objects deleted successfully from " + btrec.Name.ToString() + ".");
             }
         }
+
+        // Delete all text objects from a selected block reference and from all nested blocks within it
+
+        [CommandMethod("TEXTDELETEBLOCK")]
+        public void TextDeleteBlock()
+        {
+            try
+            {
+                // Prompt the user to select a block reference
+                PromptEntityOptions peopt = new PromptEntityOptions("\nSelect block reference");
+                peopt.SetRejectMessage("\nSelect only block reference");
+                peopt.AddAllowedClass(typeof(BlockReference), false);
+                peopt.AllowNone = false;
+
+                // Get the selected block reference
+                PromptEntityResult peres = ed.GetEntity(peopt);
+                if (peres != null)
+                {
+                    using (Transaction tr = db.TransactionManager.StartTransaction())
+                    {
+                        BlockReference bref = tr.GetObject(peres.ObjectId, OpenMode.ForRead) as BlockReference;
+                        BlockTableRecord btrec = null;
+
+                        // Get all block table records into a collection
+
+                        // Get the block table record by checking if the block reference is dynamic or not
+                        if (bref.IsDynamicBlock)
+                        {
+                            btrec = tr.GetObject(bref.DynamicBlockTableRecord, OpenMode.ForRead) as BlockTableRecord;
+                        }
+                        else
+                        {
+                            btrec = tr.GetObject(bref.BlockTableRecord, OpenMode.ForRead) as BlockTableRecord;
+                        }
+
+                        // Check if the block table record is valid then delete all text objects
+                        if (btrec != null)
+                        {
+                            ed.WriteMessage("Block name is : " + btrec.Name + "\n");
+                            DeleteTexts(db, ed, btrec);
+                        }
+
+                        tr.Commit();
+                        ed.Regen();
+                        ed.WriteMessage("\nAll text objects deleted successfully from " + btrec.Name.ToString() + ".");
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                ed.WriteMessage("\nError: " + ex.Message);
+            }
+        }
+
+        // Helper function - TEXTDELETEBLOCK
+        // to delete all text objects and multiline text objects in current space
+
+        public static void DeleteTexts(Database db, Editor ed, BlockTableRecord btrec)
+        {
+            using (Transaction tr = db.TransactionManager.StartTransaction())
+            {
+                foreach (ObjectId objId in btrec)
+                {
+                    Entity ent = tr.GetObject(objId, OpenMode.ForRead) as Entity;
+
+                    // Delete text objects from the immediate block selected
+                    if (ent is DBText || ent is MText)
+                    {
+                        ent.UpgradeOpen();
+                        ent.Erase(true);
+                    }
+
+                    // Delete text objects from nested blocks
+                    if (ent is BlockReference)
+                    {
+                        BlockReference nestedBlock = ent as BlockReference;
+                        BlockTableRecord nestedBlockTableRecord = tr.GetObject(nestedBlock.BlockTableRecord, OpenMode.ForRead) as BlockTableRecord;
+                        DeleteTexts(db, ed, nestedBlockTableRecord);
+                    }
+                }
+
+                tr.Commit();
+                //ed.Regen();
+                ed.WriteMessage("\nAll text objects deleted successfully from " + btrec.Name.ToString() + ".");
+            }
+        }
+    
+        
     }
 
     
