@@ -89,4 +89,6 @@ Collection of ACAD tools for a better walkthrough...
 -Function      : Flips selected blocks on their base boints.\
 -Purpose       : Instant object manipulation.
 
-
+#### TEXTDELETEBLOCK         
+-Function      : Deletes all text & mtext objects from a selected block and its nested chain of blocks.\
+-Purpose       : Simplifying 3rd-party drawings.
