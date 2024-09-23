@@ -92,3 +92,7 @@ Collection of ACAD tools for a better walkthrough...
 #### TEXTDELETEBLOCK         
 -Function      : Deletes all text & mtext objects from a selected block and its nested chain of blocks.\
 -Purpose       : Simplifying 3rd-party drawings.
+
+#### GETNESTEDLAYERNAMES         
+-Function      : Retrieves layer names of a nested objectand its nested chain of blocks.\
+-Purpose       : XREF management.
