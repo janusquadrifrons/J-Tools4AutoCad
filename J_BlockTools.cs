@@ -1,4 +1,5 @@
-﻿using System.IO; // --- File Management
+﻿using System;
+using System.IO; // --- File Management
 using System.Text.RegularExpressions; // --- Regex 
 
 /// Block related operators
@@ -480,6 +481,8 @@ namespace J_Tools
             }
         }
 
+        /////////////////////////////////////////////////////////
+
         // Delete all text objects from a selected block reference and from all nested blocks within it
 
         [CommandMethod("TEXTDELETEBLOCK")]
@@ -565,9 +568,68 @@ namespace J_Tools
                 ed.WriteMessage("\nAll text objects deleted successfully from " + btrec.Name.ToString() + ".");
             }
         }
-    
-        
+
+        /////////////////////////////////////////////////////////
+
+        // Querry layer names of parent blocks of an object and the layer name of the nested object itself
+        [CommandMethod("GETNESTEDLAYERNAMES")]
+        public void GetNestedLayerNames()
+        {
+            try
+            {
+                // Promprt the user to select a nested object
+                PromptNestedEntityOptions preo = new PromptNestedEntityOptions("\nSelect a nested object: ");
+                preo.AllowNone = false;
+
+                PromptNestedEntityResult result = ed.GetNestedEntity(preo);
+                if (result.Status != PromptStatus.OK)
+                {
+                    ed.WriteMessage("\nNo object selected.");
+                    return;
+                }
+
+                using (Transaction tr = db.TransactionManager.StartTransaction())
+                {
+                    // Get the selected object
+                    Entity selectedEntity = tr.GetObject(result.ObjectId, OpenMode.ForRead) as Entity;
+                    if (selectedEntity == null)
+                    {
+                        ed.WriteMessage("\nInvalid object selected.");
+                        return;
+                    }
+
+                    // Write the layer name of the selected object
+                    ed.WriteMessage("\nLayer name of the selected object: " + selectedEntity.Layer);
+
+                    // Get the container object Ids of parent blocks
+                    ObjectId[] containerIds = result.GetContainers();
+                    if (containerIds.Length == 0)
+                    {
+                        ed.WriteMessage("\nNo parent block found.");
+                        return;
+                    }
+
+                    // Iterate each parent block and retriev the layer names
+                    ed.WriteMessage("\nParent block names :");
+
+                    foreach (ObjectId containerId in containerIds)
+                    {
+                        BlockReference parentBlockRef = tr.GetObject(containerId, OpenMode.ForRead) as BlockReference;
+                        if (parentBlockRef != null)
+                        {
+                            ed.WriteMessage("\n" + parentBlockRef.Name + " : " + parentBlockRef.Layer);
+                        }
+                    }
+
+                    tr.Commit();
+                }
+            }
+            catch (System.Exception ex)
+            {
+                ed.WriteMessage("\nError: " + ex.Message);
+            }
+        }
     }
 
-    
+
 }
