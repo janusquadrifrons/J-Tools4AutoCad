@@ -94,5 +94,5 @@ Collection of ACAD tools for a better walkthrough...
 -Purpose       : Simplifying 3rd-party drawings.
 
 #### GETNESTEDLAYERNAMES         
--Function      : Retrieves layer names of a nested objectand its nested chain of blocks.\
+-Function      : Retrieves layer names of a nested object and its nested chain of blocks.\
 -Purpose       : XREF management.
