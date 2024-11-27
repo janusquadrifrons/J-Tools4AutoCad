@@ -729,5 +729,357 @@ namespace J_Tools
                 tr.Commit();
             }
         }
+
+        /////////////////////////////////////////////////////////
+
+        /// Slice 2D objects at their intersections - UNDERCONSTRUCTION
+
+        [CommandMethod("SLICE2D")]
+
+        public void Slice2d()
+        {
+            // Prompt the user to select objects to be sliced
+            PromptSelectionOptions pso = new PromptSelectionOptions();
+            pso.MessageForAdding = "\nSelect (2D) objects to slice: ";
+            pso.AllowDuplicates = false;
+            PromptSelectionResult psr = ed.GetSelection(pso);
+
+            if (psr.Status != PromptStatus.OK)
+            {
+                ed.WriteMessage("\nCommand cancelled.");
+                return;
+            }
+
+            // List to store selected objects
+            ObjectId[] selectedObjectIds = psr.Value.GetObjectIds();
+            List<Entity> selectedEntities = new List<Entity>();
+
+            using (Transaction tr = db.TransactionManager.StartTransaction())
+            {
+                BlockTable bt = (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForRead); 
+                BlockTableRecord btr = (BlockTableRecord)tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForWrite); 
+
+                // Open each selected object for read and add to the list
+                foreach (ObjectId objectId in selectedObjectIds)
+                {
+                    Entity entity = tr.GetObject(objectId, OpenMode.ForRead) as Entity;
+                    if (entity != null && (entity is Line || entity is Arc || entity is Polyline || entity is Circle))
+                    {
+                        selectedEntities.Add(entity);
+                    }
+                }
+
+                // Detect intersections and slice objects
+                List<Entity> slicedEntities = new List<Entity>();
+
+                for (int i = 0; i<selectedEntities.Count; i++)
+                {
+                    for (int j = i+1; j<selectedEntities.Count; j++)
+                    {
+                        Entity entity1 = selectedEntities[i];
+                        Entity entity2 = selectedEntities[j];
+
+                        // Check if the entities intersect
+                        Point3dCollection intersectionPoints = new Point3dCollection();
+                        entity1.IntersectWith(entity2, Intersect.OnBothOperands, intersectionPoints, IntPtr.Zero, IntPtr.Zero);
+
+                        // Debug - for intersection points
+                        if (intersectionPoints.Count > 0)
+                        {
+                            ed.WriteMessage($"\nFound {intersectionPoints.Count} intersection points between entity {i} and entity {j}.");
+                        }
+                        else
+                        {
+                            ed.WriteMessage($"\nNo intersection points found between entity {i} and entity {j}.");
+                        }
+
+                        if (intersectionPoints.Count > 0)
+                        {
+                            // Slice entity1 at intersection points
+                            var slicedPartsEntity1 = SliceEntityAtPoints(entity1, intersectionPoints, tr, btr);
+                            slicedEntities.AddRange(slicedPartsEntity1);
+
+                            // Slice entity2 at intersection points
+                            var slicedPartsEntity2 = SliceEntityAtPoints(entity2, intersectionPoints, tr, btr);
+                            slicedEntities.AddRange(slicedPartsEntity2);
+
+                            // Erase original entities only after successful slicing
+                            if (slicedPartsEntity1.Count > 0 && slicedPartsEntity2.Count > 0)
+                            {
+                                entity1.UpgradeOpen();
+                                entity1.Erase();
+                                entity2.UpgradeOpen();
+                                entity2.Erase();
+                            }
+
+                        }
+                    }
+                }
+
+                foreach (Entity slicedEntity in slicedEntities)
+                {
+                    btr.AppendEntity(slicedEntity);
+                    tr.AddNewlyCreatedDBObject(slicedEntity, true);
+                }
+                
+                tr.Commit();
+                ed.Regen();
+
+            }
+
+            ed.WriteMessage("\nSelected objects sliced at their intersections.");
+        }
+
+        // Helper function - Slice an entity at intersection points - UNDERCONSTRUCTION
+        private List<Entity> SliceEntityAtPoints(Entity entity, Point3dCollection intersectionPoints, Transaction tr, BlockTableRecord btr)
+        {
+            List<Entity> slicedParts = new List<Entity>();
+
+            // If there are less than two points, we cannot slice
+            if (intersectionPoints.Count == 0)
+            {
+                ed.WriteMessage("\nNo intersection points found, skipping slicing.");
+                return slicedParts;
+            }
+
+            ed.WriteMessage($"\nFound {intersectionPoints.Count} intersection points.");
+
+            // Sort intersection points by distance to the start point of the entity
+            List<Point3d> sortedPoints = SortPointsAlongEntity(entity, intersectionPoints);
+
+            // Create new segments between each pair of points
+            for (int i = 0; i<sortedPoints.Count-1; i++)
+            {
+                Point3d startPoint = sortedPoints[i];
+                Point3d endPoint = sortedPoints[i + 1];
+
+                if (entity is Line)
+                {
+                    // Slice line into segments
+                    Line segment = new Line(startPoint, endPoint);
+                    btr.AppendEntity(segment);
+                    tr.AddNewlyCreatedDBObject(segment, true);
+                    slicedParts.Add(segment);
+                }
+                else if (entity is Arc arc)
+                {
+                    // Slice arc into segments
+                    double startAngle = (startPoint - arc.Center).AngleOnPlane(new Plane(arc.Center, arc.Normal));
+                    double endAngle = (endPoint - arc.Center).AngleOnPlane(new Plane(arc.Center, arc.Normal));
+                    Arc segment = new Arc(arc.Center, arc.Radius, startAngle, endAngle);
+                    btr.AppendEntity(segment);
+                    tr.AddNewlyCreatedDBObject(segment, true);
+                    slicedParts.Add(segment);
+                }
+                else if (entity is Polyline polyline)
+                {
+                    // Slice polyline into segments
+                    Polyline segment = CreateSubPolyline(polyline, startPoint, endPoint);
+                    if (segment.NumberOfVertices > 1)
+                    {
+                        btr.AppendEntity(segment);
+                        tr.AddNewlyCreatedDBObject(segment, true);
+                        slicedParts.Add(segment);
+                    }
+                }
+                else if (entity is Circle circle)
+                {
+                    // Convert circle to arc segments
+                    double startAngle = (startPoint - circle.Center).AngleOnPlane(new Plane(circle.Center, circle.Normal));
+                    double endAngle = (endPoint - circle.Center).AngleOnPlane(new Plane(circle.Center, circle.Normal));
+                    Arc segment = new Arc(circle.Center, circle.Radius, startAngle, endAngle);
+                    btr.AppendEntity(segment);
+                    tr.AddNewlyCreatedDBObject(segment, true);
+                    slicedParts.Add(segment);
+                }
+                else
+                {
+                    ed.WriteMessage("\nUnsupported entity type for slicing.");
+                }
+            }
+
+            return slicedParts;
+        }
+
+        // Helper function - Sort intersection points along the entity
+        private List<Point3d> SortPointsAlongEntity(Entity entity, Point3dCollection points)
+        {
+            // Sort intersection points by distance to the start point of the entity
+            List<Point3d> sortedPoints = new List<Point3d>(points.Count);
+
+            // Get the start point of the entity
+            foreach (Point3d pt in points)
+            {
+                sortedPoints.Add(pt);
+            }
+
+            sortedPoints.Sort((pt1, pt2) =>
+            {
+                if (entity is Line line)
+                {
+                    try
+                    {
+                        // Sort by distance along line
+                        return line.StartPoint.DistanceTo(pt1).CompareTo(line.StartPoint.DistanceTo(pt2));
+                    }
+                    catch (System.Exception)
+                    {
+                        ed.WriteMessage($"\nError sorting points along Line. Points may not be on the line path.");
+                        return 0;
+                    }
+                }
+                else if (entity is Polyline polyline)
+                {
+                    try
+                    {
+                        // Sort by parameter along polyline
+                        double param1 = polyline.GetParameterAtPoint(pt1);
+                        double param2 = polyline.GetParameterAtPoint(pt2);
+                        return param1.CompareTo(param2);
+                    }
+                    catch (System.Exception)
+                    {
+                        ed.WriteMessage($"\nError sorting points along Polyline. Points may not be on the polyline path.");
+                        return 0;
+                    }
+                }
+                else if (entity is Arc arc)
+                {
+                    try
+                    {
+                        // Sort by angle along arc
+                        double angle1 = (pt1 - arc.Center).AngleOnPlane(new Plane(arc.Center, arc.Normal));
+                        double angle2 = (pt2 - arc.Center).AngleOnPlane(new Plane(arc.Center, arc.Normal));
+                        return angle1.CompareTo(angle2);
+                    }
+                    catch (System.Exception)
+                    {
+                        ed.WriteMessage($"\nError sorting points along Arc. Points may not be on the arc path.");
+                        return 0;
+                    }
+                }
+
+                return 0;
+            });
+
+            // Debug - Output sorted points for debugging
+            foreach (var point in sortedPoints)
+            {
+                ed.WriteMessage($"\nSorted Point: {point}");
+            }
+
+            return sortedPoints;
+        }
+
+        // Helper function - Create a sub-polyline between two points
+        private Polyline CreateSubPolyline(Polyline polyline, Point3d startPoint, Point3d endPoint)
+        {
+            Polyline subPolyline = new Polyline();
+
+            int startIndex = (int)polyline.GetParameterAtPoint(startPoint);
+            int endIndex = (int)polyline.GetParameterAtPoint(endPoint);
+
+            // Add vertices between the start and end indexes to the sub-polyline
+            for (int i = startIndex; i <= endIndex; i++)
+            {
+                subPolyline.AddVertexAt(subPolyline.NumberOfVertices, polyline.GetPoint2dAt(i), polyline.GetBulgeAt(i), 0, 0);
+            }
+
+            return subPolyline;
+        }
+
+        /////////////////////////////////////////////////////////
+
+        /// Convert 3D Spline objects to 2D Polylines by projecting to XY plane
+
+        [CommandMethod("SPLINETOPOLYLINE")]
+
+        public void SplineToPolyline()
+        {
+            // Prompt the user to select objects to be converted
+            PromptSelectionOptions pso = new PromptSelectionOptions();
+            pso.MessageForAdding = "\nSelect 3D splines to convert: ";
+            pso.AllowDuplicates = false;
+            PromptSelectionResult psr = ed.GetSelection(pso);
+
+            if (psr.Status != PromptStatus.OK)
+            {
+                ed.WriteMessage("\nCommand cancelled.");
+                return;
+            }
+
+            // List to store selected objects
+            ObjectId[] selectedObjectIds = psr.Value.GetObjectIds();
+            List<Entity> selectedEntities = new List<Entity>();
+
+            using (Transaction tr = db.TransactionManager.StartTransaction())
+            {
+                BlockTable bt = (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForRead);
+                BlockTableRecord btr = (BlockTableRecord)tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForWrite);
+
+                // Open each selected object for read and add to the list
+                foreach (ObjectId objectId in selectedObjectIds)
+                {
+                    Entity entity = tr.GetObject(objectId, OpenMode.ForRead) as Entity;
+                    if (entity != null && entity is Spline)
+                    {
+                        selectedEntities.Add(entity);
+                    }
+                }
+
+                // Convert 3D splines to 2D polylines
+                foreach (Entity entity in selectedEntities)
+                {
+                    if (entity is Spline spline)
+                    {
+                        // Project the spline to the XY plane
+                        Polyline polyline = ProjectSplineToXY(spline, tr, btr);
+
+                        // Add the polyline to the block table record
+                        btr.AppendEntity(polyline);
+                        tr.AddNewlyCreatedDBObject(polyline, true);
+
+                        // Erase the original spline
+                        spline.UpgradeOpen();
+                        spline.Erase();
+                    }
+                }
+
+                tr.Commit();
+                ed.Regen();
+            }
+
+            ed.WriteMessage("\nSelected 3D splines converted to 2D polylines.");
+        }
+
+        // Helper method - Project a 3D spline to the XY plane
+        private Polyline ProjectSplineToXY(Spline spline, Transaction tr, BlockTableRecord btr)
+        {
+            Polyline polyline = new Polyline();
+
+            // Get the spline control points by iterating spline control points and add to a Point3dCollection
+            Point3dCollection controlPoints = new Point3dCollection();
+
+            for (int i = 0; i < spline.NumControlPoints; i++)
+            {
+                controlPoints.Add(spline.GetControlPointAt(i));
+            }
+            
+
+            // Project the control points to the XY plane
+            foreach (Point3d controlPoint in controlPoints)
+            {
+                Point2d point2d = new Point2d(controlPoint.X, controlPoint.Y);
+                polyline.AddVertexAt(polyline.NumberOfVertices, point2d, 0, 0, 0);
+            }
+
+            // Set the polyline properties
+            polyline.Layer = spline.Layer;
+            polyline.ColorIndex = spline.ColorIndex;
+            polyline.Linetype = spline.Linetype;
+            polyline.LineWeight = spline.LineWeight;
+
+            return polyline;
+        }
     }
 }
