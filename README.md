@@ -98,5 +98,5 @@ Collection of ACAD tools for a better walkthrough...
 -Purpose       : XREF management.
 
 #### SPLINETOPOLYLINE         
--Function      : Convert spline objects to 2D polyline similar to flatshot.\
+-Function      : Convert spline objects to 2D polylines, similar to flatshot.\
 -Purpose       : Simplifying 3rd-party drawings.
