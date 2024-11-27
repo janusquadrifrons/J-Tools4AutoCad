@@ -96,3 +96,7 @@ Collection of ACAD tools for a better walkthrough...
 #### GETNESTEDLAYERNAMES         
 -Function      : Retrieves layer names of a nested object and its nested chain of blocks.\
 -Purpose       : XREF management.
+
+#### SPLINETOPOLYLINE         
+-Function      : Convert spline objects to 2D polyline similar to flatshot.\
+-Purpose       : Simplifying 3rd-party drawings.
